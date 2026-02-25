@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "167041075554",
+    "project_id": "sudo9-prod",
+    "storage_bucket": "sudo9-prod.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:167041075554:android:d6b9193c033d6829ecc43b",
+        "android_client_info": {
+          "package_name": "com.sudoku.sudo9"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChYnowcEl7VsNmbxo-kudYucsatFcpxgY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

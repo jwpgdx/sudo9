@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Node / Expo
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Expo / React Native build artifacts
+.expo/
+dist/
+build/
+coverage/
+
+# Metro / caches
+.metro-health-check*
+
+# Env / secrets (do not commit)
+.env
+.env.*
+
