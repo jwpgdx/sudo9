@@ -15,7 +15,7 @@
 - `PRD_SPEC_LOCK.md` > `PRD_DECISIONS.md`(ADR/Q decided) > `PRD_MASTER.md` > `PRD_INDEX.md`
 
 현재 기준선:
-- **v1.95-doc frozen (2026-02-25)**
+- **v1.96-doc frozen (2026-02-25)**
 
 ## What You MUST NOT Do
 
@@ -58,4 +58,3 @@
 - 변경 파일 목록
 - 실행한 커맨드 + 결과
 - 남은 블로커를 “Implementation vs RC/Store submission”으로 분리
-

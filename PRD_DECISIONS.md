@@ -2,7 +2,7 @@
 
 > Canonical file: `PRD_DECISIONS.md`
 > Scope: Sections 26~30 (Open Questions/ADR/Prompt/Checklist/Changelog)
-> Current frozen baseline: **v1.95-doc** (2026-02-25)
+> Current frozen baseline: **v1.96-doc** (2026-02-25)
 > Implementation status: **not started** (문서 기준선 확정 단계)
 
 ## 26. Open Questions (지속 확장용)
@@ -91,6 +91,9 @@
 | Q-063 | decided | economy | 재화 시스템(단일 코인) 및 지갑 저장 위치를 무엇으로 고정할 것인가? | 코인 1종 / 코인+젬 2종 | 코인 1종 + 지갑(서버) | PM/BE | 2026-02-24 | BM, Anti-abuse, Sync | ADR-064 | 38.1.6, 19.3.2, 39.1 |
 | Q-064 | decided | ads | 보상형(Rewarded) 사용처/일일 한도(재화벌이/힌트충전) | revive / 재화 / 힌트 / 혼합 | 재화+힌트(일일 한도 고정) | Monetization | 2026-02-24 | Ads, UX, Abuse | ADR-065 | 38.1.5.1, 38.1.6, 23.2 |
 | Q-065 | decided | iap | 코인 구매(IAP) SKU 구성(MVP) | 없음 / 1개 / 3개 | 1개 | Monetization | 2026-02-24 | BM, Ops, Support | ADR-066 | 38.1.2, 39.6 |
+| Q-066 | decided | journey | Journey(Stage/Chapter) 모드를 MVP에 포함하고 stage 구조/seed 규칙을 고정할 것인가? | 제외 / 포함(목록 기반) / 포함(seed 기반) | 포함(seed 기반) | PM/FE/BE | 2026-02-25 | Retention, UX, Sync | ADR-067 | 18.1, 19.3.2, 21.11, 39.1.15 |
+| Q-067 | decided | journey | Journey 3-star 평가(시간/힌트) + 코인 보상(총 지급/추가 지급 delta)을 MVP에 포함할 것인가? | 별만(보상 없음) / 별+코인(총 지급) / 별+코인(난이도별 차등) | 별+코인(총 지급+delta) | PM/BE | 2026-02-25 | Economy, Fairness, Retention | ADR-068 | 21.11, 38.1.6.5, 39.4.3 |
+| Q-068 | deferred | cosmetics | 챕터 테마 해금 + 테마 상점(코인/유료) 정책을 어떻게 고정할 것인가? | 클리어 해금 only / 상점 구매 only / 둘 다(클리어 해금 + 선구매) | Post-MVP(v1.3+)로 이관 | PM/FE/BE | 2026-03-31 | Retention, BM, Scope | ADR-069 | 42.3(B-019), 20.2.6, 39.1.2, 39.1.13 |
 
 자동 이관 메모(2026-02-21):
 - 추출 기준: 14~41장 중심으로 `옵션`, `(선택)` 키워드가 포함된 항목을 수집
@@ -1384,6 +1387,93 @@
   - PRD section: SPEC 38.1.2, 38.1.6, 39.6, 39.1
   - Open Question: Q-065
 
+### ADR-067 Journey(Stage/Chapter) 도입 + 결정론적 stage seed 규칙
+- date: 2026-02-25
+- status: accepted
+- owners: PM, FE, BE
+- context:
+  - Daily만으로는 장기 진행/목표 동기가 약할 수 있어, stage 기반 진행 모드를 MVP에 포함한다.
+  - 서버 콘텐츠 목록/퍼즐 리스트 없이도 “같은 stage=같은 퍼즐”이 재현 가능해야 한다.
+- options:
+  - A: Journey 제외(MVP에는 Classic/Daily만)
+  - B: 목록 기반 stage(서버/콘텐츠 테이블 필요)
+  - C: 결정론적 seed 기반 stage(클라이언트 로컬 생성)
+- decision:
+  - C안으로 확정한다.
+  - `journeyVersion=1`, `chapterId(=difficulty)=easy|medium|hard|expert|evil`, `stagesPerChapter=10`으로 고정한다.
+  - `stageId=j{journeyVersion}_{chapterId}_{stageIndex2}`(예: `j1_easy_01`)로 고정한다.
+  - seed/puzzleId 계산은 SPEC 18.1/18.2를 단일 기준으로 한다.
+  - 진행도는 Cloud Sync(`/users/{uid}/journeyStages/{stageId}.bestStars`)에 저장한다(server-write).
+  - Journey에는 gameover/failed가 없으며, 실수 제한(`mistakeLimitMode`)은 Journey에서 강제 `off`로 취급한다.
+- rollback trigger:
+  - Journey가 일정/QA 비용을 과도하게 증가시키면 stage 수 축소 또는 Post-MVP로 이관한다(별도 ADR).
+- related:
+  - PRD section: SPEC 18.1, 19.6, 21.11, 39.1.15, 39.4.3
+  - Open Question: Q-066
+
+### ADR-068 Journey 3-star 평가 + 코인 보상(총 지급/추가 지급 delta) 정책
+- date: 2026-02-25
+- status: accepted
+- owners: PM, BE
+- context:
+  - Journey 진행의 동기 부여(별)와 코인 economy 진입점(보상)을 제공한다.
+  - 반복 파밍/치팅을 줄이기 위해 "스테이지별 1회성 총 지급 + 별 개선 시 delta 지급"으로 제한한다.
+  - 별 산출의 시간 기준(durationMs) 해석 불일치를 방지하기 위해 타이머/시간 정의를 잠근다.
+- options:
+  - A: 별만 제공(보상 없음)
+  - B: 별+코인(클리어마다 반복 지급)
+  - C: 별+코인(스테이지별 1회성 총 지급 + 별 개선 시 delta 지급)
+- decision:
+  - C안으로 확정한다.
+  - 별 산출:
+    - ⭐1: 클리어
+    - ⭐2: `hintsUsed==0` AND `durationMs<=softLimitMs`
+    - ⭐3: `hintsUsed==0` AND `durationMs<=hardLimitMs`
+  - 시간 기준(durationMs) 정의:
+    - `durationMs`는 `GameStatus=playing`에서만 누적되는 active play time(ms)이며, `paused`(background autoPause 포함) 시간은 포함하지 않는다(SPEC 21.10).
+    - UI에 표시되는 Timer 값은 `durationMs`와 동일 기준(playing-only)이어야 한다(표시/판정 기준 불일치 금지).
+  - 힌트 기준:
+    - `hintsUsed`는 "힌트가 실제로 적용(Apply)된 횟수"로 정의한다.
+    - 힌트 화면 열기/요청만으로 `hintsUsed`를 증가시키지 않는다.
+    - ⭐2/⭐3 모두 `hintsUsed==0`을 유지한다(완화하지 않음).
+  - 실수 기준:
+    - `mistakes`는 별 산출 조건에 포함하지 않는다(통계/피드백 용도).
+  - soft/hard 제한 시간 상수는 SPEC 21.11을 단일 기준으로 고정한다.
+  - 코인 “총 지급 기준”은 `star1Total=+5`, `star2Total=+10`, `star3Total=+20`으로 고정한다.
+  - 코인 지급은 서버 검증 함수 `verifyJourneyStage(stageId, sessionId)`로만 수행한다.
+  - 중복 지급 방지를 위해 wallet의 `journeyRewardedStarsByStage[stageId]`를 server-write로 유지한다(Reset Progress 이후에도 유지).
+- rollback trigger:
+  - 인플레이션/악용이 임계치를 넘으면 지급량 조정 또는 stage reward 제거를 ADR로 재논의한다.
+- related:
+  - PRD section: SPEC 21.10, 21.11, 38.1.6.5, 39.4.3, 39.1.13, 39.1.15
+  - Open Question: Q-067
+
+### ADR-069 UI 테마(스킨) 상점 + Chapter 테마 해금 정책 (Post-MVP)
+- date: 2026-02-26
+- status: proposed
+- owners: PM, FE, BE
+- context:
+  - UI 테마(스킨)를 코인 사용처 및 Journey 진행 보상(챕터 클리어 해금)으로 확장한다.
+  - "해금"과 "구매"가 동시에 존재할 경우(예: 챕터 테마를 해금 전 선구매 가능) 중복 처리/복구/Reset Progress 규칙이 없으면 구현이 갈라진다.
+- options:
+  - A: 챕터 클리어 해금 only (상점 판매 없음)
+  - B: 상점 구매 only (진행 해금 없음)
+  - C: Hybrid (챕터 클리어 해금 + 상점 선구매 허용)
+- decision:
+  - MVP에서는 UI 테마 확장/해금/상점을 구현하지 않는다(테마 값은 `system|light|dark`만).
+  - Post-MVP(v1.3+)에서 B-019로 구현하며, 구현 착수 전에 아래 항목을 확정한다(Q-068):
+    - Chapter 클리어 정의: 예) 해당 chapter의 stage 10개 중 `bestStars>=1` 10개 달성 등
+    - Reset Progress 시 테마 해금/구매 상태 유지 여부
+    - 잠김 테마 선구매 허용 시 중복 처리(구매/해금 충돌) 및 UI 표시 규칙
+    - 테마 소유/선택값 Cloud Sync 범위(권장: 계정 단위 sync)
+    - 가격 정책(코인 가격/유료(IAP) 판매 여부/할인/프리미엄 혜택 여부) 및 경제 인플레이션 방지 가드
+- rollback trigger:
+  - 전환율/리뷰 악화 또는 경제 인플레이션이 임계치를 초과하면 테마 수 축소/가격 조정 또는 unlock-only로 단순화한다.
+- related:
+  - Open Question: Q-068
+  - Backlog: B-019
+  - PRD section: SPEC 20.2.6(Theme), 39.1.2(settings/meta), 39.1.13(wallet), 39.1.15(journeyStages)
+
 ---
 
 ## 28. Prompt Pack (바이브코딩 작업 템플릿)
@@ -1461,7 +1551,7 @@ Review these files as a single source-of-truth set:
 - PRD_POST_MVP_BACKLOG.md
 
 Important context:
-- Baseline is v1.95-doc frozen (2026-02-25).
+- Baseline is v1.96-doc frozen (2026-02-25).
 - Authority order on conflict: PRD_SPEC_LOCK.md > PRD_DECISIONS.md(ADR/Q decided) > PRD_MASTER.md > PRD_INDEX.md.
 - Q-001~Q-xxx are authoritative if marked decided/deferred.
 - ADR-001~ADR-xxx are authoritative if marked accepted.
@@ -1490,7 +1580,7 @@ Output format (strict):
 2. P1 (Important) — max 5
 3. P2 (Nice-to-have) — max 3
 4. Missing MVP features — max 3
-5. “Already resolved in v1.95-doc” (items that should NOT be raised again)
+5. “Already resolved in v1.96-doc” (items that should NOT be raised again)
 6. Final readiness verdict (GO / CONDITIONAL GO / NO-GO)
 7. Placeholder scan
 
@@ -1657,6 +1747,7 @@ Special rule:
 | v1.93-doc | 2026-02-24 | 게이트/결제/스토어 제출 정합: RC/스토어 제출 블로커 규칙 문장에서 `<FILL_ME>` 리터럴을 제거하고 placeholder 표현으로 통일(자동 스캔 false-positive 방지) + PRD_INDEX에 authority order 1줄 고정. PRD_MASTER IAP 요약에서 entitlement 적용 범위를 Premium SKU로 한정하고 Coins Pack은 premium 변경 금지(MUST NOT)를 추가. Google Play Data Safety “encrypted in transit”를 Yes로 고정 제출(HTTPS/TLS only, HTTP 금지) | SPEC 38.1.1/38.1.1.2/38.1.1.4, MASTER 8.2, PRD_INDEX, decisions header/index header, MASTER 3.3, 30 | no | Codex |
 | v1.94-doc | 2026-02-25 | 개발 착수/제출 게이트 명확화: 38.1.1.2 placeholder 잔존은 RC/스토어 제출/릴리즈만 금지(구현/로컬 dev build은 허용)로 문구를 보강하고, 문서 최종 감사 프롬프트 템플릿(28.4)을 추가 | SPEC 38.1.1.2, INDEX 운영 원칙, decisions header/index header, MASTER 3.3, DECISIONS 28, 30 | no | Codex |
 | v1.95-doc | 2026-02-25 | 수익화/컴플라이언스 정합 보강: Paywall 혜택에 “힌트 무제한”을 포함해 Premium 가치 제시를 정합(혜택 3줄 + copy key 추가)하고, 광고 동의 정책의 지역 표기를 adConsentRegion(enum: US_CA)에 맞춰 정합. iOS AdMob App ID 반영을 Info.plist `GADApplicationIdentifier` MUST로 고정. 지원/진단 데이터 retention 운영 요건을 제출값과 정합되도록 `Sentry retention <=90일`, `support payload <=180일`로 잠금 + Sprint0 체크리스트에 확인 항목 추가 | SPEC 36.1/38.1.2/38.1.3/38.1.5/38.2.2/40.2, MASTER 8.2, index header, decisions header, MASTER 3.3, 30 | no | Codex |
+| v1.96-doc | 2026-02-25 | Journey(Stage/Chapter) 모드 도입: 결정론적 stage seed + Cloud Sync stage 진행도(journeyStages). Journey는 gameover/failed 없음(실수 제한 off). 3-star 평가(시간/힌트) + stage 별 코인 보상(총 5/10/20, delta 지급) 추가. 스키마/보안 규칙/서버 검증 계약 `verifyJourneyStage` 추가 + 스토어 Privacy table에 journeyStages 항목 추가 + MASTER MVP 범위/요약에 Journey 반영 | SPEC 18.1/19.3.2/19.6/19.8.5/20.2.8/21.11/22.1/23.2/38.1.1.1/38.1.6.5/39.1.4/39.1.9/39.1.13/39.1.15/39.3/39.4.3/41.4, MASTER 0/3.1/4.6, ADR-067/ADR-068, decisions header/index header, 30 | no | Codex |
 
 운영 규칙:
 - 문서 변경 시 changelog를 같은 커밋에서 함께 업데이트한다.

@@ -115,6 +115,15 @@
 연결:
 - Source Sections: `3.2`
 
+#### 42.3.8 B-019 UI 테마(스킨) 상점 + Chapter 클리어 해금
+
+| backlogId | sourceQId | title | status | targetVersion | priority | owner | dependsOn | acceptance | rollbackTrigger |
+|---|---|---|---|---|---|---|---|---|---|
+| B-019 | Q-068 | UI 테마(스킨) 상점(코인 결제) + Chapter 클리어 해금 | queued | v1.3+ | P3 | PM/FE/BE | B-018, Journey stage 진행도(ADR-067/ADR-068), 디자인 에셋 | (1) 테마 최소 3종 제공 + Preview/Equip (2) 코인으로 구매(중복 구매 방지) (3) Chapter 클리어 시 테마 자동 해금(정의는 Q-068/ADR-069) (4) 재설치/다기기에서 테마 소유/선택 복구 정합 | 전환율/리뷰 악화 또는 경제 인플레이션이 임계치 초과 시 테마 수 축소/가격 조정 또는 unlock-only로 단순화 |
+
+연결:
+- Source Sections: `3.2`
+
 ### 42.4 Master 5.3 통계 확장 백로그 (Post-MVP)
 
 #### 42.4.1 B-008 성장 분석 카드(7일 비교)

@@ -13,8 +13,8 @@
 ## 0. 한 줄 요약
 - **코어**: 난이도 = 빈칸 개수(X) → **필요 논리기술 난이도(예: X-Wing, Swordfish) 기반 생성/검증(O)**
 - **차별화**: 빠른 입력감 + 안정적인 퍼즐 난이도 신뢰도
-- **리텐션**: Daily Challenge + 기본 통계(Stats). 업적/리더보드 MUST NOT 포함(Post-MVP).
-- **상용화**: Cloud Sync + 광고(Banner/Interstitial) + Rewarded(코인/힌트) + IAP(프리미엄/코인)
+- **리텐션**: Daily Challenge + Journey(Stage) + 기본 통계(Stats). 업적/리더보드 MUST NOT 포함(Post-MVP).
+- **상용화**: Cloud Sync + 광고(Banner/Interstitial) + Rewarded(코인/힌트) + Journey stage 보상(별/코인) + IAP(프리미엄/코인)
 
 ---
 
@@ -53,9 +53,10 @@
 - Cell-First / Digit-First / Auto 입력 모드
 - Hint v1(L0 단순 + L1 가이드) + 일일 제한/광고 충전
 - Daily Challenge(UTC 00:00 리셋) + 도장
+- Journey(Stage/Chapter) + 3-star 평가 + 코인 보상(Cloud Sync 저장)
 - 통계(난이도별 시간/횟수/승률)
 - Cloud Sync(로그인/복구)
-- 광고(배너+보상형+인터스티셜) + IAP(프리미엄+코인)
+- 광고(배너+보상형+인터스티셜) + Journey stage 보상(3-star 코인) + IAP(프리미엄+코인)
 
 ### 3.2 Post-MVP (고도화)
 - 리더보드(글로벌/친구) + 시즌제
@@ -68,7 +69,8 @@
 ### 3.3 문서 운영 규칙 (단일 기준 고정)
 - 이 문서는 “상세 스펙(14~41장)”을 구현 기준(Single Source of Truth)으로 사용한다.
 - 요약/벤치마크 섹션은 방향 참고용이며, 상세 스펙과 충돌 시 상세 스펙이 우선한다.
-- 아래 확정표는 **2026-02-25 기준(v1.95-doc 동결)** MVP 기본값이다.
+- 아래 확정표는 **2026-02-25 기준(v1.96-doc 동결)** MVP 기본값이다.
+- (Note) Journey(Stage/Chapter) 및 3-star/코인 보상 스펙은 `PRD_SPEC_LOCK.md` 18.1, 21.11, 38.1.6.5, 39.4.3을 단일 기준으로 한다.
 - (추가 정책 포함) 힌트/재화/Rewarded 목적은 `PRD_SPEC_LOCK.md` 15.7, 38.1.5.1, 38.1.6을 단일 기준으로 한다.
 
 | 항목 | 최종 결정 (MVP) | 비고 |
@@ -166,6 +168,29 @@ Digit-First UX 디테일
 - 충돌(규칙 위반) 표시
 - 충돌 기본 정책: 표시 ON + 입력 차단 OFF(표시만 기본)
 - 남은 숫자 1개 자동완성: 기본 OFF (설정에서 ON 가능)
+
+---
+
+### 4.6 Journey(Stage/Chapter) 모드 (MVP)
+- Journey는 stage 기반 진행 모드이며, 퍼즐은 목록/서버 제공이 아니라 결정론적 seed 계산으로 생성한다.
+- 진행도는 Cloud Sync에 저장하며 stageId별 bestStars(0~3)를 유지한다.
+- chapter 구성:
+  - chapterId는 난이도(`easy|medium|hard|expert|evil`)와 동일하게 취급한다.
+  - chapter당 stage는 10개(`01..10`)로 고정한다.
+- stage unlock:
+  - stage `01`은 항상 unlocked.
+  - stage `02..10`은 직전 stage를 클리어(별 1개 이상)해야 unlocked로 취급한다.
+  - unlocked stage는 재플레이 가능하며 bestStars 개선(별/시간)만 허용한다.
+- [MUST NOT] Journey에는 게임오버/failed 상태가 없다(실수 제한 강제 ON 금지).
+- 3-star 평가(별 1~3개):
+  - ⭐ 1: stage 클리어
+  - ⭐⭐ 2: 여유로운 제한 시간 내 클리어 + 힌트 사용 없음
+  - ⭐⭐⭐ 3: 빡센 제한 시간 내 클리어 + 힌트 사용 없음
+  - (시간 기준) 제한 시간 판정은 `PRD_SPEC_LOCK.md` 21.10의 Timer(`durationMs`, pause 제외) 기준이다.
+- 코인 보상:
+  - 별 총 지급 기준: ⭐=+5, ⭐⭐=+10, ⭐⭐⭐=+20. 재플레이로 별이 개선될 때는 delta만 추가 지급한다(중복 지급 금지).
+  - 코인 지급/중복 방지는 서버 검증 함수 `verifyJourneyStage(stageId, sessionId)`에서만 수행한다(`PRD_SPEC_LOCK.md` 39.4.3).
+- 단일 기준: 상세 규칙(상수/seed/타이머/별/보상/서버 검증)은 `PRD_SPEC_LOCK.md` 18.1, 21.11, 38.1.6.5, 39.4.3을 따른다.
 
 ---
 
@@ -268,6 +293,9 @@ Digit-First UX 디테일
   - 진행 중 퍼즐(세이브, `/users/{uid}/currentGame/meta`)
   - 구매 상태(프리미엄) + wallet(coinsBalance)
 - Reset Progress는 로컬/클라우드에 동일 반영(계정/구매/설정은 유지)
+- [MUST] Reset Progress는 wallet(coinsBalance)/구매 이력(프리미엄 포함)을 유지한다(코인 0 초기화 금지).
+- [MUST] Reset Progress 이후에도 Journey 별 보상 재수급은 불가해야 한다(보상 이력 유지; ADR-068 + `PRD_SPEC_LOCK.md` 39.4.3).
+- [MUST] Reset Progress 완료 시 로컬 pending/재시도 큐를 purge해야 한다(과거 진행이 재업로드되는 것 방지; `PRD_SPEC_LOCK.md` 19.8.5).
 
 ### 7.2 핵심 데이터 모델(초안)
 - 구현 필드명/타입/동기화 규칙의 단일 기준은 `PRD_SPEC_LOCK.md` 39.1이다(본 절은 개념 요약).
@@ -803,19 +831,26 @@ Game 상태는 다음 중 하나를 가진다:
 ### 13.10.5 Completed 화면
 완료 시 전체 화면 모달(CompletedModal) 표시
 
-표시 항목:
+공통 표시 항목:
 - 완료 시간
 - 실수 수
 - 힌트 사용 수
 - 난이도
 
-버튼:
-- New Game
-- Replay
+Journey(mode=`journey`) 추가 표시:
+- Stage header: `{chapterId} {stageIndex2}/10` (예: `EASY 03/10`)
+- 획득 stars(1~3) + bestStars
+- 코인 보상: 별 보상 코인은 `⭐=+5`, `⭐⭐=+10`, `⭐⭐⭐=+20` 총 지급 기준이며, 재플레이로 별이 개선될 때는 delta만 추가 지급한다(중복 지급 금지). 코인 지급/중복 방지는 서버 검증 함수 `verifyJourneyStage(stageId, sessionId)`에서만 수행한다.
+- [MUST] 코인 표기는 `verifyJourneyStage` 응답의 `coinsDelta`만 사용한다(offline/검증 대기 중이면 숨김). 총 지급 기준(+5/+10/+20)을 UI에서 직접 계산/표기 MUST NOT 한다.
+- 오프라인/검증 대기 중이면 “보상은 온라인 복귀 후 반영” 안내를 노출한다.
+
+버튼(모드별):
+- classic/daily: `New Game`, `Replay`
+- journey: `Next Stage`(다음 stage 존재 시), `Stage List`, `Replay`
 - Share 버튼 없음(MVP 제외, v1.1 검토)
 
 광고 규칙(무료 유저):
-- Completed 직후 인터스티셜은 최소 5판 쿨다운을 적용한다.
+- CompletedModal 닫기 직후 인터스티셜은 최소 5판 쿨다운을 적용한다(Next Stage도 “모달 닫기”로 취급).
 
 ---
 
