@@ -15,7 +15,7 @@
 - `PRD_SPEC_LOCK.md` > `PRD_DECISIONS.md`(ADR/Q decided) > `PRD_MASTER.md` > `PRD_INDEX.md`
 
 현재 기준선:
-- **v1.96-doc frozen (2026-02-25)**
+- **v1.97-doc frozen (2026-02-26)**
 
 ## What You MUST NOT Do
 

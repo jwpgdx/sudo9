@@ -2912,8 +2912,8 @@ Chapter/Stage 범위:
 |---|---|---|
 | Node.js | `22.11.0` | 로컬/CI 공통 |
 | pnpm | `10.2.0` | lockfile 생성 도구 |
-| Expo SDK | `52.0.0` | Managed 기준 |
-| React Native | `0.76.3` | Expo SDK 52 baseline |
+| Expo SDK | `52.0.49` | Managed 기준 |
+| React Native | `0.76.9` | Expo SDK 52 baseline |
 | React | `18.3.1` | Expo SDK 52 baseline |
 | NativeWind | `4.1.23` | 디자인 토큰 구현 기준 |
 

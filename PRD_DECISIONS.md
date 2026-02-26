@@ -2,7 +2,7 @@
 
 > Canonical file: `PRD_DECISIONS.md`
 > Scope: Sections 26~30 (Open Questions/ADR/Prompt/Checklist/Changelog)
-> Current frozen baseline: **v1.96-doc** (2026-02-25)
+> Current frozen baseline: **v1.97-doc** (2026-02-26)
 > Implementation status: **not started** (문서 기준선 확정 단계)
 
 ## 26. Open Questions (지속 확장용)
@@ -1469,10 +1469,32 @@
     - 가격 정책(코인 가격/유료(IAP) 판매 여부/할인/프리미엄 혜택 여부) 및 경제 인플레이션 방지 가드
 - rollback trigger:
   - 전환율/리뷰 악화 또는 경제 인플레이션이 임계치를 초과하면 테마 수 축소/가격 조정 또는 unlock-only로 단순화한다.
-- related:
+  - related:
   - Open Question: Q-068
   - Backlog: B-019
   - PRD section: SPEC 20.2.6(Theme), 39.1.2(settings/meta), 39.1.13(wallet), 39.1.15(journeyStages)
+
+### ADR-070 Sprint 0 Expo SDK 52 패치 버전 정합(호환 경고 제거) 정책
+- date: 2026-02-26
+- status: accepted
+- owners: FE, DevOps
+- context:
+  - Expo는 같은 SDK(52) 내에서도 권장 패치 조합이 있으며, 조합이 어긋나면 `expo start`에서 호환 경고가 발생하고 런타임 이슈 가능성이 증가한다.
+  - MVP 기간에는 `latest` 자동 추종을 금지하고(38.2.1), SDK 52 계열 내에서만 안정 패치 버전으로 정합한다.
+- decision:
+  - Expo SDK major는 `52`로 유지한다.
+  - SDK 52 권장 패치 버전으로 다음을 고정한다:
+    - `expo=52.0.49`
+    - `react-native=0.76.9`
+    - `jest-expo=52.0.6`
+    - `eslint-config-expo=8.0.1`
+  - 기타 버전 락 항목은 유지한다:
+    - `node=22.11.0`, `pnpm=10.2.0`, `react=18.3.1`, `nativewind=4.1.23`
+  - `package.json`의 버전은 exact로 고정한다(`^`, `~` 금지).
+- rollback trigger:
+  - 패치 버전 정합 이후에 빌드/런타임 회귀가 발생하면 직전 고정 버전으로 롤백하고 원인을 ADR로 기록한다.
+- related:
+  - PRD section: SPEC 38.2.1.1, 38.2.6.1
 
 ---
 
@@ -1551,7 +1573,7 @@ Review these files as a single source-of-truth set:
 - PRD_POST_MVP_BACKLOG.md
 
 Important context:
-- Baseline is v1.96-doc frozen (2026-02-25).
+- Baseline is v1.97-doc frozen (2026-02-26).
 - Authority order on conflict: PRD_SPEC_LOCK.md > PRD_DECISIONS.md(ADR/Q decided) > PRD_MASTER.md > PRD_INDEX.md.
 - Q-001~Q-xxx are authoritative if marked decided/deferred.
 - ADR-001~ADR-xxx are authoritative if marked accepted.
@@ -1580,7 +1602,7 @@ Output format (strict):
 2. P1 (Important) — max 5
 3. P2 (Nice-to-have) — max 3
 4. Missing MVP features — max 3
-5. “Already resolved in v1.96-doc” (items that should NOT be raised again)
+5. “Already resolved in v1.97-doc” (items that should NOT be raised again)
 6. Final readiness verdict (GO / CONDITIONAL GO / NO-GO)
 7. Placeholder scan
 
@@ -1748,6 +1770,7 @@ Special rule:
 | v1.94-doc | 2026-02-25 | 개발 착수/제출 게이트 명확화: 38.1.1.2 placeholder 잔존은 RC/스토어 제출/릴리즈만 금지(구현/로컬 dev build은 허용)로 문구를 보강하고, 문서 최종 감사 프롬프트 템플릿(28.4)을 추가 | SPEC 38.1.1.2, INDEX 운영 원칙, decisions header/index header, MASTER 3.3, DECISIONS 28, 30 | no | Codex |
 | v1.95-doc | 2026-02-25 | 수익화/컴플라이언스 정합 보강: Paywall 혜택에 “힌트 무제한”을 포함해 Premium 가치 제시를 정합(혜택 3줄 + copy key 추가)하고, 광고 동의 정책의 지역 표기를 adConsentRegion(enum: US_CA)에 맞춰 정합. iOS AdMob App ID 반영을 Info.plist `GADApplicationIdentifier` MUST로 고정. 지원/진단 데이터 retention 운영 요건을 제출값과 정합되도록 `Sentry retention <=90일`, `support payload <=180일`로 잠금 + Sprint0 체크리스트에 확인 항목 추가 | SPEC 36.1/38.1.2/38.1.3/38.1.5/38.2.2/40.2, MASTER 8.2, index header, decisions header, MASTER 3.3, 30 | no | Codex |
 | v1.96-doc | 2026-02-25 | Journey(Stage/Chapter) 모드 도입: 결정론적 stage seed + Cloud Sync stage 진행도(journeyStages). Journey는 gameover/failed 없음(실수 제한 off). 3-star 평가(시간/힌트) + stage 별 코인 보상(총 5/10/20, delta 지급) 추가. 스키마/보안 규칙/서버 검증 계약 `verifyJourneyStage` 추가 + 스토어 Privacy table에 journeyStages 항목 추가 + MASTER MVP 범위/요약에 Journey 반영 | SPEC 18.1/19.3.2/19.6/19.8.5/20.2.8/21.11/22.1/23.2/38.1.1.1/38.1.6.5/39.1.4/39.1.9/39.1.13/39.1.15/39.3/39.4.3/41.4, MASTER 0/3.1/4.6, ADR-067/ADR-068, decisions header/index header, 30 | no | Codex |
+| v1.97-doc | 2026-02-26 | Sprint 0 킥오프 안정화: Expo SDK 52 권장 패치 정합(expo `52.0.49`, RN `0.76.9`) + CI 도구 버전 정합(jest-expo `52.0.6`, eslint-config-expo `8.0.1`). Baseline 표기(v1.97) 갱신 | SPEC 38.2.1.1, ADR-070, PRD_INDEX, MASTER 3.3, decisions header/index header, AGENTS.md, README.md, 30 | no | Codex |
 
 운영 규칙:
 - 문서 변경 시 changelog를 같은 커밋에서 함께 업데이트한다.
